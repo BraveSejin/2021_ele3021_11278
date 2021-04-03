@@ -28,8 +28,7 @@ OBJS = \
 	vectors.o\
 	vm.o\
 	prac_syscall.o\
-	project01_1.o\
-	project01_1.o\
+	
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
 
@@ -185,6 +184,7 @@ UPROGS=\
 	_zombie\
 	_my_userapp\
 	_project01_1\
+	_project01_2\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
