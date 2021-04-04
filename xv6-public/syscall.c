@@ -104,7 +104,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_myfunction(void);
-extern int sys_getppid(void);
+extern int sys_getppid(void);//custom
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,

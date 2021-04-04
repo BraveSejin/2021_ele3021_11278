@@ -47,7 +47,7 @@ trap(struct trapframe *tf)
     return;
   }
   if(tf->trapno == T_MYINT){
-	  cprintf("user interrupt %d called!\n", T_MYINT);
+	  cprintf("user interrupt %d called! \n", T_MYINT);
 	  exit();
   }
 

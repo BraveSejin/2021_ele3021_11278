@@ -89,7 +89,7 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
-
+//custom system call
 int
 sys_getppid(void)
 {
