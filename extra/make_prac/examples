@@ -1,0 +1,5 @@
+make // #define DEFAULT, #define VALUE 0
+make PRINT_FLAG=PRINT1 // #define PRINT1, #define VALUE 0
+make PRINT_FLAG=PRINT2 // #define PRINT2, #define VALUE 0
+make VALUE=9 // #define VALUE 9
+make clean // removes object / executable files
