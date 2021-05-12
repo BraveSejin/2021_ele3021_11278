@@ -335,7 +335,12 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-
+cprintf("1234");
+#ifdef MLFQ_SCHED 
+int nn = MLFQ_SCHED;
+int n = MLFQ_K;
+cprintf("555555 %d %d", nn , n);
+#endif
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.

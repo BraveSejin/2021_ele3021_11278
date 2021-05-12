@@ -72,6 +72,8 @@ QEMU = $(shell if which qemu > /dev/null; \
 	echo "***" 1>&2; exit 1)
 endif
 
+
+
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
@@ -88,12 +90,10 @@ LDFLAGS += -m $(shell $(LD) -V | grep elf_i386 2>/dev/null | head -n 1)
 ifndef SCHED_POLICY
 SCHED_POLICY = DEFAULT
 endif
+CFLAGS += -D $(SCHED_POLICY)
 
 ifeq ($(SCHED_POLICY),MLFQ_SCHED)
-ifndef MLFQ_K
-MLFQ_K = 3
-endif
-CFLAGS += -D MLFQ=$(MLFQ_k)
+CFLAGS += -D MLFQ_K=$(MLFQ_K)
 endif
 
 # Disable PIE when possible (for Ubuntu 16.10 toolchain)
@@ -200,6 +200,7 @@ UPROGS=\
 	_project01_2\
 	_test_yield\
     _test_cprintf\
+	_test_mkfile\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -270,7 +271,7 @@ EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
 	printf.c umalloc.c my_userapp.c project01_1.c project01_2.c\
-	test_yield.c test_cprintf.c\
+	test_yield.c test_cprintf.c test_mkfile.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 
