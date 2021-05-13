@@ -17,4 +17,4 @@ mkfs
 .gdbinit
 cscope.*
 extra/make_pra/**
-
+.vscode

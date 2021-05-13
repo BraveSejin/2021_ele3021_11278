@@ -210,6 +210,7 @@ fork(void)
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
+  np->tick_created = ticks;
   pid = np->pid;
 
   acquire(&ptable.lock);
@@ -319,6 +320,56 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
+#ifdef FCFS_SCHED
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  struct proc *nextproc = 0;
+  c->proc = 0;
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+    
+    acquire(&ptable.lock);
+
+    uint mintick = MAXUINT; 
+    
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+      //set process to be run
+      if(p->tick_created < mintick){
+        mintick = p->tick_created;
+        nextproc = p;
+      }
+    }
+
+    if(nextproc != 0){
+      if(nextproc->tick_first_scheduled  == 0)
+        nextproc->tick_first_scheduled = ticks;
+      c->proc = nextproc;
+      switchuvm(nextproc);
+      nextproc->state = RUNNING;
+      
+      swtch(&(c->scheduler), nextproc->context);
+      switchkvm();
+      c->proc = 0;
+    }
+    
+
+    release(&ptable.lock);
+  }
+
+}
+
+
+#elif MULTILEVEL_SCHED
+#elif MLFQ_SCHED
+#else
 void
 scheduler(void)
 {
@@ -353,6 +404,7 @@ scheduler(void)
 
   }
 }
+#endif
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores

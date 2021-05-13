@@ -1,1 +1,1 @@
-make clean;make;make fs.img;
+make clean;make CPUS=1;make fs.img;

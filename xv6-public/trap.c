@@ -99,6 +99,14 @@ trap(struct trapframe *tf)
     myproc()->killed = 1;
   }
 
+#ifdef FCFS_SCHED
+ // Force process exit if a process not termintated or slept
+  if(myproc() && myproc()->state == RUNNING &&
+     tf->trapno == T_IRQ0+IRQ_TIMER && 
+     ticks - myproc()->tick_first_scheduled > 200
+    && (tf->cs&3) == DPL_USER)
+    exit();
+#endif
   // Force process exit if it has been killed and is in user space.
   // (If it is still executing in the kernel, let it keep running
   // until it gets to the regular system call return.)
