@@ -102,7 +102,9 @@ trap(struct trapframe *tf)
 #ifdef FCFS_SCHED
  // Force process exit if a process not termintated or slept
   if(myproc() && myproc()->state == RUNNING &&
-     tf->trapno == T_IRQ0+IRQ_TIMER && 
+     tf->trapno == T_IRQ0+IRQ_TIMER &&
+	 myproc()->pid != 1 &&
+	 myproc()->pid != 2 &&
      ticks - myproc()->tick_first_scheduled > 200
     && (tf->cs&3) == DPL_USER)
     exit();

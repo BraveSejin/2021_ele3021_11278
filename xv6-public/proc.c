@@ -210,7 +210,7 @@ fork(void)
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
-  np->tick_created = ticks;
+ 
   pid = np->pid;
 
   acquire(&ptable.lock);
@@ -231,7 +231,6 @@ exit(void)
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
-
   if(curproc == initproc)
     panic("init exiting");
 
@@ -261,7 +260,6 @@ exit(void)
         wakeup1(initproc);
     }
   }
-
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
   sched();
@@ -327,43 +325,42 @@ scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
-  struct proc *nextproc = 0;
   c->proc = 0;
   
   for(;;){
     // Enable interrupts on this processor.
     sti();
-    
+	
+    struct proc *nextproc = 0;
     acquire(&ptable.lock);
 
-    uint mintick = MAXUINT; 
-    
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-      //set process to be run
-      if(p->tick_created < mintick){
-        mintick = p->tick_created;
-        nextproc = p;
-      }
-    }
-
-    if(nextproc != 0){
-      if(nextproc->tick_first_scheduled  == 0)
-        nextproc->tick_first_scheduled = ticks;
-      c->proc = nextproc;
-      switchuvm(nextproc);
-      nextproc->state = RUNNING;
       
-      swtch(&(c->scheduler), nextproc->context);
-      switchkvm();
-      c->proc = 0;
+	  if(nextproc == 0){
+		nextproc = p; 
+	  }else if(nextproc->pid > p->pid){
+	    nextproc =p;
+	  }
     }
-    
 
-    release(&ptable.lock);
-  }
+	if(nextproc == 0){
+	  release(&ptable.lock);
+	  continue;
+	}
+	if(nextproc->tick_first_scheduled == 0)
+	  nextproc->tick_first_scheduled = ticks;
+	
+    c->proc = nextproc; 
+    switchuvm(nextproc);
+    nextproc->state = RUNNING;    
+    swtch(&(c->scheduler), nextproc->context);
+    switchkvm();
+    c->proc = 0;
 
+ 	release(&ptable.lock);
+ }
 }
 
 
