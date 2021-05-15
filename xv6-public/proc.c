@@ -454,9 +454,11 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-	  //cprintf("ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
+	  cprintf("457 ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
       swtch(&(c->scheduler), p->context);
+	  cprintf("459 ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
       switchkvm();
+	  cprintf("461 ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
