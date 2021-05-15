@@ -49,7 +49,13 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+#ifdef FCFS_SCHED
   uint tick_first_scheduled;
+#endif
+#ifdef MLFQ_SCHED
+  uint quantum_level_0;
+  uint quantum_level_1;
+#endif
 };
 
 // Process memory is laid out contiguously, low addresses first:
