@@ -365,6 +365,67 @@ scheduler(void)
 
 
 #elif MULTILEVEL_SCHED
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+	
+    acquire(&ptable.lock);
+    // search and schedrunnable proc with even pid
+rr:
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+	  if( p->pid % 2 == 1)
+		continue;
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+      c->proc = 0;
+	}
+  
+	//FCFS schduler
+	//If runnable proc with even pid is detected , jump to RR scheduler 
+	struct proc *nextproc = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+      if(p->pid%2 == 0)
+		goto rr; 
+
+	  if(nextproc == 0){
+		nextproc = p; 
+	  }else if(nextproc->pid > p->pid){
+	    nextproc = p;
+	  }
+    }
+
+	if(nextproc == 0){
+	  release(&ptable.lock);
+	  continue;
+	}
+	
+    c->proc = nextproc; 
+    switchuvm(nextproc);
+    nextproc->state = RUNNING;    
+    swtch(&(c->scheduler), nextproc->context);
+    switchkvm();
+    c->proc = 0;
+
+ 	release(&ptable.lock);
+ 
+  }
+}
+
+
 #elif MLFQ_SCHED
 #else
 void
@@ -461,7 +522,7 @@ forkret(void)
 }
 
 // Atomically release lock and sleep on chan.
-// Reacquires lock when awakened.
+// Reacquires lock when awakiened.
 void
 sleep(void *chan, struct spinlock *lk)
 {
