@@ -55,6 +55,8 @@ struct proc {
 #ifdef MLFQ_SCHED
   uint quantum_level_0;
   uint quantum_level_1;
+  uint queue_level;
+  uint priority;
 #endif
 };
 

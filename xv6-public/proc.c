@@ -111,7 +111,12 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
+#ifdef MLFQ_SCHED
+  p->quantum_level_0 = 4;
+  p->quantum_level_0 = 8;
+  p->queue_level = 0;
+  p->priority = 0;
+#endif
   return p;
 }
 
