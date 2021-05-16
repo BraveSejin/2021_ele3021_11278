@@ -56,7 +56,8 @@ struct proc {
   uint quantum_level_0;
   uint quantum_level_1;
   uint queue_level;
-  uint priority;
+  int priority;
+  int monopolized;
 #endif
 };
 

@@ -92,9 +92,6 @@ SCHED_POLICY = DEFAULT
 endif
 CFLAGS += -D $(SCHED_POLICY)
 
-ifeq ($(SCHED_POLICY),MLFQ_SCHED)
-CFLAGS += -D MLFQ_K=$(MLFQ_K)
-endif
 
 # Disable PIE when possible (for Ubuntu 16.10 toolchain)
 ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]no-pie'),)

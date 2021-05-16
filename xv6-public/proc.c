@@ -113,7 +113,7 @@ found:
   p->context->eip = (uint)forkret;
 #ifdef MLFQ_SCHED
   p->quantum_level_0 = 4;
-  p->quantum_level_0 = 8;
+  p->quantum_level_1 = 8;
   p->queue_level = 0;
   p->priority = 0;
 #endif
@@ -432,42 +432,176 @@ rr:
 
 
 #elif MLFQ_SCHED
+struct L1 {
+	  struct proc* queue[NPROC*100][10];
+	 	int idx[10]; 
+};
+struct L1 l1;
+   
 void
 scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
-  for(;;){
-    // Enable interrupts on this processor.
-    sti();
 
+	int i;
+	for (i=0; i< 10; i++){
+    l1.idx[i] = -1;
+	}
+  int boosted = 0;
+  for(;;){
+level0:
+    // Enable interruddpts on this processor.
+    sti();
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+
+		//boost
+		
+		if(ticks %200 == 0 && boosted == 0){
+      boosted = 1;
+			//cprintf("boostring!\n");
+	    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+				if (p->state == UNUSED)
+					continue;
+				p->queue_level=0;
+				p->priority=0;
+			}
+			for (i=0; i< 10; i++){
+    		l1.idx[i] = -1;
+			}
+		}
+		if(ticks %200 != 0)
+			boosted = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+		  if(p->queue_level !=0){
+				continue;
+			}
+	 	  if(p->state != RUNNABLE){
         continue;
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
+			}
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-	  cprintf("457 ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
-      swtch(&(c->scheduler), p->context);
-	  cprintf("459 ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
-      switchkvm();
-	  cprintf("461 ticks = %d, pid = %d, name = %s\n", ticks, p->pid, p->name);
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
+			if(p->pid != 1 && p->pid != 2){
+		  	p->quantum_level_0--;
+				if(p->quantum_level_0 == 0)
+					p->queue_level = 1;
+			}
+		  //cprintf("debug 493: pid = %d, state = %d, pri = %d, level= %d,ticks = %d\n",p->pid, p->state,p->priority ,p->queue_level,ticks);
+    	swtch(&(c->scheduler), p->context);
+			//cprintf("debug 495: pid = %d, state = %d, pri = %d, level= %d,ticks = %d\n",p->pid, p->state,p->priority ,p->queue_level,ticks); 
+			switchkvm();
+
       c->proc = 0;
-    }
+	  }
     release(&ptable.lock);
 
-  }
+		int flag_q1 = 1;
+		acquire(&ptable.lock);
+    
+		for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+	  	if(p->state == UNUSED){
+	    	continue;
+			}
+			else if(p->queue_level == 0 && p->state != SLEEPING){
+				//cprintf("debug 489: pid = %d, state %d,ticks = %d\n",p->pid,p->state, ticks);
+				flag_q1 = 0;
+	    	break;
+			}
+    }
+    release(&ptable.lock); 
+		//cprintf("debug 497: flag_q1 = %d, ticks = %d\n",flag_q1, ticks);
+		if(flag_q1 == 0)
+			continue;
+		else
+			goto level1;
+	}
+
+level1:
+  //all the proc is sleeping and have queue level 1
+
+
+	//sort queue1 by priority
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(p->queue_level != 1)
+			continue;
+	  if(p->state != RUNNABLE)
+			continue;
+  
+			//store procs by priority
+		l1.idx[p->priority]++;
+		l1.queue[l1.idx[p->priority]][p->priority] = p;
+		cprintf("debug 538: pid = %d, state = %d, pri = %d, level= %d, q1 quantum= %d ticks = %d\n",p->pid, p->state,p->priority,p->queue_level,p->quantum_level_1,ticks);
+	}
+  //cprintf("524\n");
+	int pri, index;
+	for(pri = 9; pri >= 0; pri--){
+		//fcfs
+    
+		for(;;){
+			struct proc *nextproc = 0;
+		  struct proc *p = 0 ;
+   		//find proc with minpid
+
+	   	for(index = 0; index <= l1.idx[pri]; index++){
+		  	p = l1.queue[index][pri];
+		//		cprintf("553");
+				if(p->pid == 0){
+					continue;
+				}
+		  	if(p->state != RUNNABLE){
+
+				 continue;
+				}
+				else if(p->quantum_level_1 == 0)
+					continue;
+		  	if(nextproc == 0 || nextproc->pid > p->pid){
+			  	nextproc = p;
+
+	//	     cprintf("debug 544: pid = %d, state = %d, level= %d,ticks = %d\n",p->pid, p->state, p->queue_level,ticks);
+				}
+      } 
+			//no runnable proc in this priority
+			if(nextproc == 0)
+				break;
+				
+			nextproc->quantum_level_1--;
+
+			cprintf("574 pid %d is about to switched, final quantum 1= %d\n", nextproc->pid,nextproc->quantum_level_1);
+			c->proc = nextproc;
+			switchuvm(nextproc);
+			nextproc->state = RUNNING;
+			swtch(&(c->scheduler), nextproc->context);
+			switchkvm();
+			c->proc = 0;
+	  }
+	}
+// cprintf("debug 561\n");
+	//lower priority of proc having no quantum
+
+	for(index = 0; index < l1.idx[0];index++){
+   l1.queue[index][0] -> quantum_level_1 = 8;
+	}
+
+	for(pri = 1; pri <= 9; pri++){
+		for(index = 0; index < l1.idx[pri]; index++){
+			struct proc * p = l1.queue[index][pri];
+			if(p->quantum_level_1 == 0){
+				setpriority(p->pid, p->priority -1);
+				p->quantum_level_1 = 8;
+			}
+
+		}
+	}
+
+  release(&ptable.lock);
+	goto level0;
 }
+
 #else
 void
 scheduler(void)
@@ -540,6 +674,9 @@ yield(void)
   sched();
   release(&ptable.lock);
 }
+
+
+
 
 // A fork child's very first scheduling by scheduler()
 // will swtch here.  "Return" to user space.
@@ -645,6 +782,68 @@ kill(int pid)
   release(&ptable.lock);
   return -1;
 }
+#ifdef MLFQ_SCHED
+int 
+getlev(void)
+{
+  return myproc()->queue_level;
+}
+
+int
+setpriority(int pid, int priority)
+{
+
+  if(priority < 0 || priority > 10)
+	  return -2;
+  struct proc *p;
+  
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == pid){
+			l1.queue[l1.idx[p->priority]][p->priority] = 0;
+      p->priority = priority;
+			l1.idx[p->priority]++;
+			l1.queue[l1.idx[p->priority]][p->priority] = p;
+	   release(&ptable.lock);
+		  return 0;
+    }
+  }
+	release(&ptable.lock);
+  return -1;
+
+
+}
+int
+setpriority1(int pid, int priority)
+{
+  if(priority < 0 || priority > 10)
+	  return -2;
+  struct proc *p;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid == pid){
+			l1.queue[l1.idx[p->priority]][p->priority] = 0;
+      p->priority = priority;
+			l1.idx[p->priority]++;
+			l1.queue[l1.idx[p->priority]][p->priority] = p;
+		  return 0;
+    }
+  }
+  return -1;
+}
+
+
+void
+monopolize(int password)
+{
+  struct proc* p = myproc();
+  if(password != 2016025141)
+	  p->killed = 1;
+  if(p->monopolized == 1);
+  else if (p->monopolized == 0);
+  
+}
+#endif
 
 //PAGEBREAK: 36
 // Print a process listing to console.  For debugging.
