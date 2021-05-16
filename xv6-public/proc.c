@@ -385,47 +385,45 @@ scheduler(void)
     // search and schedrunnable proc with even pid
 rr:
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-	    if( p->pid % 2 == 1)
-		    continue;
-    c->proc = p;
-    switchuvm(p);
-    p->state = RUNNING;
-    swtch(&(c->scheduler), p->context);
-    switchkvm();
-    c->proc = 0;
-	}
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-	    if( p->pid % 2 == 1)
-		    continue;
-    goto rr;
-	}
-  
-
+        if(p->state != RUNNABLE)
+          continue;
+        if( p->pid % 2 == 1)
+          continue;
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+      c->proc = 0;
+    }
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state != RUNNABLE)
+          continue;
+        if( p->pid % 2 == 1)
+          continue;
+      goto rr;
+    }
   
 	//FCFS schduler
 	//If runnable proc with even pid is detected , jump to RR scheduler 
-	struct proc *nextproc = 0;
+	  struct proc *nextproc = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
       if(p->pid%2 == 0)
-		goto rr; 
+		    goto rr; 
 
-	  if(nextproc == 0){
-		  nextproc = p; 
-	  }else if(nextproc->pid > p->pid){
-	    nextproc = p;
-	  }
+      if(nextproc == 0){
+        nextproc = p; 
+      }else if(nextproc->pid > p->pid){
+        nextproc = p;
+      }
     }
 
-	if(nextproc == 0){
-	  release(&ptable.lock);
-	  continue;
-	}
+    if(nextproc == 0){
+      release(&ptable.lock);
+      continue;
+    }
 	
     c->proc = nextproc; 
     switchuvm(nextproc);
