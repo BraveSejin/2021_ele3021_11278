@@ -343,11 +343,11 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
       
-	  if(nextproc == 0){
-		nextproc = p; 
-	  }else if(nextproc->pid > p->pid){
-	    nextproc =p;
-	  }
+		  if(nextproc == 0){
+				nextproc = p; 
+	 		}else if(nextproc->pid > p->pid){
+	 	  	 nextproc =p;
+	  	}
     }
 
 	if(nextproc == 0){
@@ -357,12 +357,12 @@ scheduler(void)
 	if(nextproc->tick_first_scheduled == 0)
 	  nextproc->tick_first_scheduled = ticks;
 	
-    c->proc = nextproc; 
-    switchuvm(nextproc);
-    nextproc->state = RUNNING;    
-    swtch(&(c->scheduler), nextproc->context);
-    switchkvm();
-    c->proc = 0;
+  c->proc = nextproc; 
+  switchuvm(nextproc);
+  nextproc->state = RUNNING;    
+  swtch(&(c->scheduler), nextproc->context);
+  switchkvm();
+  c->proc = 0;
 
  	release(&ptable.lock);
  }
@@ -387,15 +387,24 @@ rr:
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-	  if( p->pid % 2 == 1)
-		continue;
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-      c->proc = 0;
+	    if( p->pid % 2 == 1)
+		    continue;
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
+    c->proc = 0;
 	}
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+	    if( p->pid % 2 == 1)
+		    continue;
+    goto rr;
+	}
+  
+
   
 	//FCFS schduler
 	//If runnable proc with even pid is detected , jump to RR scheduler 
@@ -407,7 +416,7 @@ rr:
 		goto rr; 
 
 	  if(nextproc == 0){
-		nextproc = p; 
+		  nextproc = p; 
 	  }else if(nextproc->pid > p->pid){
 	    nextproc = p;
 	  }
