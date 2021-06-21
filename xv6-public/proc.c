@@ -578,7 +578,6 @@ level1:
 				
 			nextproc->quantum_level_1--;
 
-			cprintf("574 pid %d is about to switched, final quantum 1= %d\n", nextproc->pid,nextproc->quantum_level_1);
 			c->proc = nextproc;
 			switchuvm(nextproc);
 			nextproc->state = RUNNING;
