@@ -504,18 +504,15 @@ itrunc(struct inode *ip)
 
         for(k = 0; k < NINDIRECT; k++){
           if(b[k]){
-            cprintf("debug 507: j: %d k: %d\n", j, k);
             bfree(ip->dev, b[k]);
           }
             
         }
         brelse(bp2);
-        cprintf("debug 513: j: %d\n", j);
         bfree(ip->dev, a[j]);
         a[j]=0;
       }
     }
-    cprintf("debug 516 \n ");
     brelse(bp);
     bfree(ip->dev, ip->addrs[NDIRECT+1]);
     ip->addrs[NDIRECT+1] = 0;
