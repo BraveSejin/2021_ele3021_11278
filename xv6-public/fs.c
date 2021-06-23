@@ -383,76 +383,48 @@ bmap(struct inode *ip, uint bn)
   }
   bn -= NDIRECT;
 
-
-  /*
-    1. load addr12 block
-    2. load addr 1 ~ 128 block in level 1 
-    3. log_write if bp->data was modified
-  
-  */
-
-
-  //0 ~ 127
   if(bn < NINDIRECT){
-    // Load indirect block, allocating if necessary.
-    // STEP 1
-    if((addr = ip->addrs[NDIRECT]) == 0)//12th addr
-      ip->addrs[NDIRECT] = addr = balloc(ip->dev); // block alloc
-    bp = bread(ip->dev, addr); //block pointer
-    a = (uint*)bp->data; // datum
+    if((addr = ip->addrs[NDIRECT]) == 0)
+      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data; 
 
-    //STEP 2
     if((addr = a[bn]) == 0){
       a[bn] = addr = balloc(ip->dev);
-      //STEP3
       log_write(bp);
     }
     brelse(bp);
     return addr;
   }
-
   bn -= NINDIRECT;
-  // 0 ~ 16523
-
   
-  /*
-    1. load addr13 block 
-    2. load addr 1 ~ 128 block in 1 level
-    3. load addr 1 ~ 128 block in 2 level
-    4. log_write if bp->data was modified
-  
-  
-  */
   if(bn < NDOUBLEINDIRECT){
     // Load indirect block, allocating if necessary.
-
-    //STEP 1
     if((addr = ip->addrs[NDIRECT + 1]) == 0)  
       ip->addrs[NDIRECT + 1] = addr = balloc(ip->dev); // block alLOC
-    bp = bread(ip->dev, addr); //13TH BLOCK
+
+    // STEP1 bp is pointer to 1-level indirect block
+    bp = bread(ip->dev, addr); 
     a = (uint*)bp->data;
-    
 
     int indexInLevel1 = bn / NINDIRECT;
     int indexInLevel2 = bn % NINDIRECT;
 
-    // STEP2
     if((addr = a[indexInLevel1]) == 0){
       a[indexInLevel1] = addr = balloc(ip->dev); 
       log_write(bp);
     }
     brelse(bp);
+
+    // STEP2 : bp is pointer to 2-level indirect block
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
-    
       
-    // STEP3
     if((addr = a[indexInLevel2]) == 0){
         a[indexInLevel2] = addr = balloc(ip->dev);
         log_write(bp);
     }
     brelse(bp);
-
     return addr;
   }
 
@@ -491,12 +463,11 @@ itrunc(struct inode *ip)
     ip->addrs[NDIRECT] = 0;
   }
 
-   if(ip->addrs[NDIRECT+1]){
+  if(ip->addrs[NDIRECT+1]){
     //addr13
     bp = bread(ip->dev, ip->addrs[NDIRECT+1]);
     a = (uint*)bp->data;// block in 1 level
     
-
     for(j = 0; j < NINDIRECT; j++){
       if(a[j]){
         struct buf* bp2 = bread(ip->dev, a[j]); //
@@ -506,7 +477,6 @@ itrunc(struct inode *ip)
           if(b[k]){
             bfree(ip->dev, b[k]);
           }
-            
         }
         brelse(bp2);
         bfree(ip->dev, a[j]);
@@ -517,7 +487,6 @@ itrunc(struct inode *ip)
     bfree(ip->dev, ip->addrs[NDIRECT+1]);
     ip->addrs[NDIRECT+1] = 0;
   }
-
 
   ip->size = 0;
   iupdate(ip);
